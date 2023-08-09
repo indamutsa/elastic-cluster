@@ -1,0 +1,125 @@
+version: "3.4"
+
+services:
+  # ELASTICSEARCH CLUSTER
+  ################################################################################
+  es-master:
+    container_name: es-master
+    # build:
+    #   context: ./elasticsearch
+    #   dockerfile: Dockerfile
+    image: indamutsa/elasticsearch:v1.0.0
+    environment:
+      - node.name=es-master
+      - node.master=true
+      - node.data=false
+      - cluster.initial_master_nodes=es-master
+      - ES_JAVA_OPTS=-Xmx256m -Xms256m
+      - ELASTIC_USERNAME=elastic
+      - ELASTIC_PASSWORD=changeme
+    volumes:
+      - es-master-data:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+    networks:
+      - search-engine
+
+  es-worker1:
+    container_name: es-worker1
+    # build:
+    #   context: ./elasticsearch
+    #   dockerfile: Dockerfile
+    image: indamutsa/elasticsearch:v1.0.0
+    environment:
+      - node.name=es-worker1
+      - node.master=false
+      - node.data=true
+      - discovery.seed_hosts=es-master
+      - ES_JAVA_OPTS=-Xmx256m -Xms256m
+      - ELASTIC_USERNAME=elastic
+      - ELASTIC_PASSWORD=changeme
+    volumes:
+      - es-worker1-data:/usr/share/elasticsearch/data
+    networks:
+      - search-engine
+    depends_on:
+      - es-master
+
+  es-worker2:
+    container_name: es-worker2
+    # build:
+    #   context: ./elasticsearch
+    #   dockerfile: Dockerfile
+    image: indamutsa/elasticsearch:v1.0.0
+    environment:
+      - node.name=es-worker2
+      - node.master=false
+      - node.data=true
+      - node.ingest=true
+      - discovery.seed_hosts=es-master
+      - ES_JAVA_OPTS=-Xmx256m -Xms256m
+      - ELASTIC_USERNAME=elastic
+      - ELASTIC_PASSWORD=changeme
+    volumes:
+      - es-worker2-data:/usr/share/elasticsearch/data
+    networks:
+      - search-engine
+    depends_on:
+      - es-master
+
+  logstash:
+    container_name: logstash
+    # build:
+    #   context: ./logstash
+    #   dockerfile: Dockerfile
+    image: indamutsa/logstash:v1.0.0
+    ports:
+      - "5044:5044"
+      - "5000:5000/tcp"
+      - "5000:5000/udp"
+      - "9600:9600"
+    networks:
+      - search-engine
+    depends_on:
+      - es-master
+    restart: on-failure
+
+  kibana:
+    container_name: kibana
+    # build:
+    #   context: ./kibana
+    #   dockerfile: Dockerfile
+    image: indamutsa/kibana:v1.0.0
+    ports:
+      - "5601:5601"
+    networks:
+      - search-engine
+    depends_on:
+      - es-master
+    restart: on-failure
+
+  filebeat:
+    container_name: filebeat
+    # build:
+    #   context: ./filebeat
+    #   dockerfile: Dockerfile
+    image: indamutsa/filebeat:v1.0.0
+    volumes:
+      - "/var/lib/docker/containers:/var/lib/docker/containers:ro"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+      - search-engine
+    restart: on-failure
+
+
+# Defining the network
+######################################################
+networks:
+  search-engine:
+    external: false
+
+volumes:
+  es-master-data:
+  es-worker1-data:
+  es-worker2-data:
+

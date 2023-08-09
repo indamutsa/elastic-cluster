@@ -1,0 +1,13 @@
+filebeat.inputs:
+- type: log
+  enabled: true
+  paths:
+    - /var/lib/docker/containers/*/*.log
+
+output.elasticsearch:
+  hosts: ["es-master:9200"]
+  username: "elastic"
+  password: "changeme"
+
+logging.level: warning
+

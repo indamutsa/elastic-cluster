@@ -204,6 +204,12 @@ You can check if the cluster is up and running by navigating to:
 }
 ```
 
+Let us forward the Kibana service to port 5601:
+
+```bash
+kubectl port-forward svc/kibana 5601
+```
+
 Head to Kibana at `http://localhost:5601/` to interact with the cluster.
 The default credentials are `username: elastic, password: changeme`.
 
